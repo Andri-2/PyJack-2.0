@@ -283,7 +283,7 @@ CREATE TABLE app_settings (
 
 ```bash
 # 1. Repository klonen
-git clone https://github.com/[GITHUB-USERNAME]/pyjack.git
+git clone https://github.com/[Andri-2]/pyjack.git
 cd pyjack
 
 # 2. Virtuelle Umgebung erstellen (empfohlen)
@@ -363,4 +363,4 @@ pyjack/
 
 ## Lizenz
 
-MIT License – © 2026 [TEAMNAME], FHNW BSc Wirtschaftsinformatik
+MIT License – © 2026 [Schwab_Mehmeti], FHNW BSc Wirtschaftsinformatik
