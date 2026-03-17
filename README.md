@@ -126,18 +126,18 @@ GameUI                (Spieloberfläche, refresh, Event-Handler)
 
 ## User Stories
 
-| ID | Als … | möchte ich … | damit … |
-|---|---|---|---|
-| US-01 | Spieler | ein neues Blackjack-Spiel starten können | ich eine vollständige Spielrunde durchführen kann |
-| US-02 | Spieler | eine Karte ziehen (Hit) | ich meinen Punktestand erhöhen kann |
-| US-03 | Spieler | stehen bleiben (Stand) | der Dealer seinen Zug ausführt und ein Ergebnis berechnet wird |
-| US-04 | Spieler | den aktuellen Punktestand jederzeit sehen | ich fundierte Spielentscheidungen treffen kann |
-| US-05 | Spieler | eine Spielempfehlung (Hit/Stand) erhalten | ich die Spielstrategie erlernen kann | ----> Allenfalls entfernen
-| US-06 | Spieler | meine Spielhistorie einsehen | ich meine Leistung über Zeit verfolgen kann |
-| US-07 | Spieler | statistische Auswertungen meiner Spiele sehen | ich meine Stärken und Schwächen analysieren kann | ---> Allenfals entfernen
-| US-08 | Spieler | meine Spielhistorie als CSV exportieren | ich die Daten in externen Tools auswerten kann |
-| US-09 | Spieler | Tischfarbe und Kartenrückseite anpassen | ich das Spielerlebnis personalisieren kann | --> Allenfals entfernen
-| US-10 | Spieler | meine Einstellungen dauerhaft speichern | ich sie nicht bei jedem Start neu konfigurieren muss | --> Allenfalls entfernen
+| ID | Als … | möchte ich … | damit … | Eingabe | Ausgabe | Datentyp |
+|---|---|---|---|---|---|---|
+| US-01 | Spieler | ein neues Blackjack-Spiel starten können | ich eine vollständige Spielrunde durchführen kann | Klick auf „Neues Spiel"-Button | Spielfeld wird angezeigt, je 2 Karten für Spieler und Dealer sichtbar | `Game`, `Deck`, `Hand`, `Card` |
+| US-02 | Spieler | eine Karte ziehen (Hit) | ich meinen Punktestand erhöhen kann | Klick auf „Hit"-Button | Neue Karte wird auf der Hand angezeigt, Punktestand aktualisiert sich | `Game`, `Hand`, `Card` |
+| US-03 | Spieler | stehen bleiben (Stand) | der Dealer seinen Zug ausführt und ein Ergebnis berechnet wird | Klick auf „Stand"-Button | Dealer deckt auf und zieht automatisch, Gewinner wird angezeigt | `Game`, `Dealer`, `GameState` |
+| US-04 | Spieler | den aktuellen Punktestand jederzeit sehen | ich fundierte Spielentscheidungen treffen kann | Spieler schaut auf das Spielfeld | Aktueller Punktestand (z.B. „17 Punkte") ist sichtbar | `int`, `Hand` |
+| US-05 | Spieler | eine Spielempfehlung (Hit/Stand) erhalten | ich die Spielstrategie erlernen kann | Klick auf Infosymbol | „Hit empfohlen" oder „Stand empfohlen" wird angezeigt | `bool` | ----> Allenfalls entfernen
+| US-06 | Spieler | meine Spielhistorie einsehen | ich meine Leistung über Zeit verfolgen kann | Klick auf „Spielhistorie"-Tab | Liste der bisherigen Spiele + Diagramme mit Gewinn/Verlust-Übersicht | `List[GameRecord]`, `dict` Statistiken |
+| US-07 | Spieler | statistische Auswertungen meiner Spiele sehen | ich meine Stärken und Schwächen analysieren kann | Öffnen der History-Seite | Win-Quote, durchschnittlicher Score, Punkte-Vergleiche (Spieler vs. Dealer) | `GameRecord`, `dict` Statistiken | ---> Allenfals entfernen
+| US-08 | Spieler | meine Spielhistorie als CSV exportieren | ich die Daten in externen Tools auswerten kann | Klick auf „CSV Export"-Button | CSV-Datei (pyjack_history.csv) wird heruntergeladen | `csv.DictWriter`, `Blob` |
+| US-09 | Spieler | Tischfarbe und Kartenrückseite anpassen | ich das Spielerlebnis personalisieren kann | Auswahl aus Dropdown-Listen in Einstellungen | Tischfarbe und Kartenrückseite ändern sich sofort auf dem Spielfeld | `AppSettings`, `str` | --> Allenfals entfernen
+| US-10 | Spieler | meine Einstellungen dauerhaft speichern | ich sie nicht bei jedem Start neu konfigurieren muss | Änderungen vornehmen + Klick auf „Speichern" | Einstellungen werden gespeichert, beim nächsten Start erneut angewendet | `AppSettings` (ORM Model) | --> Allenfalls entfernen
 
 ---
 
