@@ -239,12 +239,48 @@ def render_game() -> None:
 # ============================================================================
 @ui.page('/history')
 def render_history() -> None:
+    def handle_csv_export():
+        games = db_manager.get_all_games_asc()
+        output = io.StringIO()
+        writer = csv.writer(output)
+        def clean_cards(cards_str):
+            if not cards_str:
+                return cards_str
+            # Ersetze Symbole durch ihre passenden Buchstaben (Herz=H, Karo=D, Kreuz=C, Pik=S)
+            return cards_str.replace('♥', 'H').replace('♦', 'D').replace('♣', 'C').replace('♠', 'S')
+
+        writer.writerow([
+            'Zeitpunkt', 'Gewinner', 'Spieler_Punkte', 
+            'P_Karte_1', 'P_Karte_2', 'P_Karte_3', 'P_Karte_4', 'P_Karte_5', 'P_Karte_6', 'P_Karte_7',
+            'Dealer_Punkte', 
+            'D_Karte_1', 'D_Karte_2', 'D_Karte_3', 'D_Karte_4', 'D_Karte_5', 'D_Karte_6', 'D_Karte_7'
+        ])
+        for g in games:
+            p_cards = [clean_cards(c.strip()) for c in g.player_cards.split(',')]
+            d_cards = [clean_cards(c.strip()) for c in g.dealer_cards.split(',')]
+            
+            p_cards.extend([''] * (7 - len(p_cards)))
+            d_cards.extend([''] * (7 - len(d_cards)))
+            
+            row = [
+                g.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
+                g.winner,
+                g.player_score,
+                *p_cards[:7],
+                g.dealer_score,
+                *d_cards[:7]
+            ]
+            writer.writerow(row)
+        ui.download(output.getvalue().encode('utf-8'), filename='pyjack2_history.csv')
+
     ui.query('body').style('margin: 0; padding: 0; background-color: #0f172a;')
     with ui.column().classes('w-full min-h-screen items-center p-6 text-white'):
         with ui.row().classes('w-full max-w-4xl justify-between items-center mb-6 bg-black/40 p-4 rounded-xl'):
             ui.button('← Menü', on_click=lambda: ui.navigate.to('/')).props('flat color=yellow')
             ui.label('Spielhistorie').classes('text-2xl font-bold text-yellow-500 drop-shadow')
-            ui.button('Löschen', on_click=lambda: (db_manager.delete_all_games(), ui.navigate.reload())).props('outline color=red')
+            with ui.row().classes('gap-2'):
+                ui.button('CSV Export', on_click=handle_csv_export).props('outline color=blue')
+                ui.button('Löschen', on_click=lambda: (db_manager.delete_all_games(), ui.navigate.reload())).props('outline color=red')
             
         stats = db_manager.get_statistics()
         
