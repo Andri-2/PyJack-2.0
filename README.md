@@ -44,7 +44,6 @@ Das Projekt entstand als Erweiterung des gleichnamigen CLI-Projekts aus dem Vors
 - 🃏 Realistische Pokerkarten mit Corner-Indizes (J/Q/K mit Figurensymbolen)
 - 🎩 Automatischer Dealer-Zug (zieht bis Wert ≥ 17)
 - 💡 Optionale Spielhinweise (Hit / Stand Empfehlung)
-- 🎵 Hintergrundmusik und Soundeffekte (Web Audio API, keine externen Dateien)
 
 ### Navigationssystem
 
@@ -61,7 +60,7 @@ Das Projekt entstand als Erweiterung des gleichnamigen CLI-Projekts aus dem Vors
 - 📉 Balkendiagramm: Punkte-Vergleich (Spieler vs. Dealer)
 - 📁 CSV-Export der Spielhistorie (client-seitig via Blob-API)
 
-### Personalisierung
+### Personalisierung  ---> Allenfalls reduzieren, basierend auf scope
 - 5 Tischfarben (Grün, Blau, Burgunder, Mitternacht, Braun)
 - 4 Karten-Rückseiten-Farben
 - Spielername, Audio-Lautstärke, Animations-Toggle
@@ -127,20 +126,15 @@ GameUI                (Spieloberfläche, refresh, Event-Handler)
 
 ## User Stories
 
-| ID | Als … | möchte ich … | damit … |
-|---|---|---|---|
-| US-01 | Spieler | ein neues Blackjack-Spiel starten können | ich eine vollständige Spielrunde durchführen kann |
-| US-02 | Spieler | eine Karte ziehen (Hit) | ich meinen Punktestand erhöhen kann |
-| US-03 | Spieler | stehen bleiben (Stand) | der Dealer seinen Zug ausführt und ein Ergebnis berechnet wird |
-| US-04 | Spieler | den aktuellen Punktestand jederzeit sehen | ich fundierte Spielentscheidungen treffen kann |
-| US-05 | Spieler | eine Spielempfehlung (Hit/Stand) erhalten | ich die Spielstrategie erlernen kann |
-| US-06 | Spieler | meine Spielhistorie einsehen | ich meine Leistung über Zeit verfolgen kann |
-| US-07 | Spieler | statistische Auswertungen meiner Spiele sehen | ich meine Stärken und Schwächen analysieren kann |
-| US-08 | Spieler | meine Spielhistorie als CSV exportieren | ich die Daten in externen Tools auswerten kann |
-| US-09 | Spieler | Tischfarbe und Kartenrückseite anpassen | ich das Spielerlebnis personalisieren kann |
-| US-10 | Spieler | Musik und Soundeffekte ein-/ausschalten | ich die Audiowiedergabe nach meinen Wünschen steuern kann |
-| US-11 | Spieler | meinen Spielernamen festlegen | ich in der Statistik namentlich identifiziert werde |
-| US-12 | Spieler | meine Einstellungen dauerhaft speichern | ich sie nicht bei jedem Start neu konfigurieren muss |
+| ID | Als … | möchte ich … | damit … | Eingabe | Ausgabe | Datentyp |
+|---|---|---|---|---|---|---|
+| US-01 | Spieler | ein neues Blackjack-Spiel starten können | ich eine vollständige Spielrunde durchführen kann | Klick auf „Neues Spiel"-Button | Spielfeld wird angezeigt, je 2 Karten für Spieler und Dealer sichtbar | `Game`, `Deck`, `Hand`, `Card` |
+| US-02 | Spieler | eine Karte ziehen (Hit) | ich meinen Punktestand erhöhen kann | Klick auf „Hit"-Button | Neue Karte wird auf der Hand angezeigt, Punktestand aktualisiert sich | `Game`, `Hand`, `Card` |
+| US-03 | Spieler | stehen bleiben (Stand) | der Dealer seinen Zug ausführt und ein Ergebnis berechnet wird | Klick auf „Stand"-Button | Dealer deckt auf und zieht automatisch, Gewinner wird angezeigt | `Game`, `Dealer`, `GameState` |
+| US-04 | Spieler | den aktuellen Punktestand jederzeit sehen | ich fundierte Spielentscheidungen treffen kann | Spieler schaut auf das Spielfeld | Aktueller Punktestand (z.B. „17 Punkte") ist sichtbar | `int`, `Hand` |
+| US-05 | Spieler | eine Spielempfehlung (Hit/Stand) erhalten | ich die Spielstrategie erlernen kann | Klick auf Infosymbol | „Hit empfohlen" oder „Stand empfohlen" wird angezeigt | `bool` | ----> Allenfalls entfernen
+| US-06 | Spieler | meine Spielhistorie einsehen | ich meine Leistung über Zeit verfolgen kann | Klick auf „Spielhistorie"-Tab | Liste der bisherigen Spiele + Diagramme mit Gewinn/Verlust-Übersicht | `List[GameRecord]`, `dict` Statistiken |
+| US-07 | Spieler | meine Spielhistorie als CSV exportieren | ich die Daten in externen Tools auswerten kann | Klick auf „CSV Export"-Button | CSV-Datei (pyjack_history.csv) wird heruntergeladen | `csv.DictWriter`, `Blob` |
 
 ---
 
@@ -311,8 +305,8 @@ Die Datenbank `pyjack.db` wird automatisch beim ersten Start erstellt.
 ```
 pyjack/
 │
-├── pyjack.py            # Hauptdatei (komplette Anwendung, alle Schichten)
-├── pyjack.db            # SQLite-Datenbank (wird automatisch erstellt)
+├── pyjack2.0.py            # Hauptdatei (komplette Anwendung, alle Schichten)
+├── pyjack2.0.db            # SQLite-Datenbank (wird automatisch erstellt)
 ├── requirements.txt     # Python-Abhängigkeiten
 ├── README.md            # Projektdokumentation
 └── .gitignore           # Git-Ausschlüsse
@@ -330,19 +324,15 @@ pyjack/
 | **Persistenzschicht** | DatabaseManager, ORM-Modelle, Migration | [VORNAME NACHNAME 2] |
 | **UI & Präsentation** | GameUI, alle 4 Pages, Navigation | [VORNAME NACHNAME 3] |
 | **CSS & Design** | Poker-Karten, Farbpaletten, Animationen | [VORNAME NACHNAME 1] |
-| **Audio-System** | Web Audio API JavaScript-Integration | [VORNAME NACHNAME 2] |
 | **Charts** | ECharts Integration (Donut, Line, Bar) | [VORNAME NACHNAME 3] |
 | **Dokumentation** | README, Use Cases, User Stories | Alle |
 | **Testing & Bugfixing** | Manuelle Tests, DB-Migration, Bugfixes | Alle |
-
-> Die Arbeitsaufteilung ist anhand der GitHub-Commit-Historie nachvollziehbar.
 
 ---
 
 ## Bekannte Einschränkungen
 
 - Die Anwendung ist für Einzelspieler ausgelegt (kein Multiplayer)
-- Audio startet erst nach der ersten User-Interaktion (Browser-Sicherheitsrichtlinie für Web Audio API)
 - Die Datenbank wird lokal auf dem Server gespeichert (kein Cloud-Backup)
 - Mobilgeräte werden unterstützt, sind aber nicht primäres Zielgerät
 
