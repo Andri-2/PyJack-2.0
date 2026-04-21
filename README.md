@@ -195,6 +195,66 @@ GameUI                (Spieloberfläche, refresh, Event-Handler)
 | **Nachbedingung** | Datei `pyjack_history.csv` lokal gespeichert |
 
 ---
+## Test Cases
+
+### TC-01 bis TC-05: Spielablauf (UC-01 / US-01–04)
+
+| ID | Beschreibung | Vorbedingung | Eingabe | Erwartetes Ergebnis | Priorität |
+|---|---|---|---|---|---|
+| TC-01 | Neues Spiel starten | App läuft, `/game` geöffnet | Klick auf „Neues Spiel" | Spielfeld sichtbar, Spieler hat 2 Karten, Dealer hat 1 sichtbare + 1 verdeckte Karte, Punktestand aktualisiert | Hoch |
+| TC-02 | Karte ziehen (Hit) | Spiel läuft, `GameState = PLAYER` | Klick auf „Hit" | Neue Karte erscheint auf Spielerhand, Punktestand erhöht sich korrekt | Hoch |
+| TC-03 | Stehen bleiben (Stand) | Spiel läuft, `GameState = PLAYER` | Klick auf „Stand" | Dealer deckt auf, zieht bis ≥ 17, Gewinner wird angezeigt, Ergebnis in DB gespeichert | Hoch |
+| TC-04 | Bust – Spieler überschreitet 21 | Spieler hat z.B. 15 Punkte | Klick auf „Hit" (Karte bringt >21) | Sofortige Niederlage, Ergebnis = „Dealer", kein weiterer Zug möglich | Hoch |
+| TC-05 | Blackjack – Spieler hat 21 mit 2 Karten | Neues Spiel gestartet | – (automatisch erkannt) | „Blackjack!" wird angezeigt, Spiel endet sofort als Sieg, ausser Dealer hat ebenfalls Blackjack | Hoch |
+
+---
+
+### TC-06 bis TC-08: Dealer-Logik
+
+| ID | Beschreibung | Vorbedingung | Eingabe | Erwartetes Ergebnis | Priorität |
+|---|---|---|---|---|---|
+| TC-06 | Dealer zieht bis ≥ 17 | Spieler hat Stand gedrückt | – (automatisch) | Dealer zieht solange Wert < 17, stoppt bei ≥ 17 | Hoch |
+| TC-07 | Dealer Bust | Dealer hat < 17, zieht weiter | – (automatisch) | Dealer überschreitet 21 → Spieler gewinnt | Hoch |
+| TC-08 | Dealer Blackjack | Dealer erhält 21 mit 2 Karten | – (automatisch) | Unentschieden wenn Spieler auch Blackjack, sonst Dealer gewinnt | Mittel |
+
+---
+
+### TC-09 bis TC-10: Ass-Logik (Hand-Wertberechnung)
+
+| ID | Beschreibung | Vorbedingung | Eingabe | Erwartetes Ergebnis | Priorität |
+|---|---|---|---|---|---|
+| TC-09 | Ass zählt als 11 | Hand hat Ass + 7 | – | Wert = 18 | Hoch |
+| TC-10 | Ass wechselt zu 1 bei Bust-Risiko | Hand hat Ass + 7 + 6 | – | Wert = 14 (Ass zählt als 1, kein Bust) | Hoch |
+
+---
+
+### TC-11 bis TC-12: Spielhistorie (US-06)
+
+| ID | Beschreibung | Vorbedingung | Eingabe | Erwartetes Ergebnis | Priorität |
+|---|---|---|---|---|---|
+| TC-11 | Spielhistorie anzeigen | Mind. 1 Spiel gespeichert | Navigation zu `/history` | Liste der letzten Spiele + Diagramme werden korrekt geladen | Mittel |
+| TC-12 | Keine Spiele vorhanden | Leere Datenbank | Navigation zu `/history` | Hinweistext wird angezeigt, keine Diagramme, kein Absturz | Mittel |
+
+---
+
+### TC-13: CSV-Export (US-08)
+
+| ID | Beschreibung | Vorbedingung | Eingabe | Erwartetes Ergebnis | Priorität |
+|---|---|---|---|---|---|
+| TC-13 | CSV-Export der Spielhistorie | Mind. 1 Spiel in DB | Klick auf „CSV Export" | `pyjack_history.csv` wird heruntergeladen, enthält korrekte Spalten und Daten | Mittel |
+
+---
+
+### TC-14: Spielhinweise (US-05)
+
+| ID | Beschreibung | Vorbedingung | Eingabe | Erwartetes Ergebnis | Priorität |
+|---|---|---|---|---|---|
+| TC-14a | Hinweis „Hit empfohlen" wird angezeigt | Spiel läuft, Spieler hat niedrigen Punktestand (z.B. ≤ 11) | Klick auf Infosymbol | „Hit empfohlen" wird angezeigt | Niedrig |
+| TC-14b | Hinweis „Stand empfohlen" wird angezeigt | Spiel läuft, Spieler hat hohen Punktestand (z.B. ≥ 17) | Klick auf Infosymbol | „Stand empfohlen" wird angezeigt | Niedrig |
+| TC-14c | Hinweis nicht sichtbar wenn deaktiviert | `show_hints = False` in Einstellungen | Klick auf Infosymbol | Kein Hinweis erscheint | Niedrig |
+
+---
+
 
 ## Datenbankschema
 
