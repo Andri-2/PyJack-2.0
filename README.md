@@ -234,7 +234,7 @@ GamePageUI            (Spieloberfläche, refresh, Event-Handler)
 
 ---
 
-### TC-13: CSV-Export (US-08)
+### TC-13: CSV-Export (US-07)
 
 | ID | Beschreibung | Vorbedingung | Eingabe | Erwartetes Ergebnis | Priorität |
 |---|---|---|---|---|---|
