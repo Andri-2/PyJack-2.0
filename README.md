@@ -43,7 +43,7 @@ Das Projekt entstand als Erweiterung des gleichnamigen CLI-Projekts aus dem Vors
 - ♠ Vollständiges Blackjack-Spiel nach offiziellen Regeln (Hit, Stand, Blackjack-Erkennung)
 - 🃏 Realistische Pokerkarten mit Corner-Indizes (J/Q/K mit Figurensymbolen)
 - 🎩 Automatischer Dealer-Zug (zieht bis Wert ≥ 17)
-- 💡 Optionale Spielhinweise (Hit / Stand Empfehlung) ---> ALLENFALLS ENTFERNEN
+- 💡 Optionale Spielhinweise (Hit / Stand Empfehlung)
 
 ### Navigationssystem
 
@@ -112,14 +112,14 @@ Player
 
 Enum: CardRank        (TWO..ACE, mit symbol + base_value)
 Enum: CardSuit        (HEARTS/DIAMONDS/CLUBS/SPADES, mit symbol + color)
-Enum: GameState       (WAITING / PLAYER / DEALER / OVER)
+Enum: GameState       (WAITING / PLAYER_TURN / DEALER_TURN / GAME_OVER)
 
 @dataclass Card       (CardRank + CardSuit)
 Deck                  (52 Cards, shuffle, draw)
 Hand                  (List[Card], get_value mit Ass-Logik)
 Game                  (Controller: new_game, hit, stand, _end)
 DatabaseManager       (CRUD: save_game, get_games, get_stats, get/save_settings)
-GameUI                (Spieloberfläche, refresh, Event-Handler)
+GamePageUI            (Spieloberfläche, refresh, Event-Handler)
 ```
 
 ---
@@ -134,10 +134,7 @@ GameUI                (Spieloberfläche, refresh, Event-Handler)
 | US-04 | Spieler | den aktuellen Punktestand jederzeit sehen | ich fundierte Spielentscheidungen treffen kann | Spieler schaut auf das Spielfeld | Aktueller Punktestand (z.B. „17 Punkte") ist sichtbar | `int`, `Hand` |
 | US-05 | Spieler | eine Spielempfehlung (Hit/Stand) erhalten | ich die Spielstrategie erlernen kann | Klick auf Infosymbol | „Hit empfohlen" oder „Stand empfohlen" wird angezeigt | `bool` | ----> Allenfalls entfernen
 | US-06 | Spieler | meine Spielhistorie einsehen | ich meine Leistung über Zeit verfolgen kann | Klick auf „Spielhistorie"-Tab | Liste der bisherigen Spiele + Diagramme mit Gewinn/Verlust-Übersicht | `List[GameRecord]`, `dict` Statistiken |
-| US-07 | Spieler | statistische Auswertungen meiner Spiele sehen | ich meine Stärken und Schwächen analysieren kann | Öffnen der History-Seite | Win-Quote, durchschnittlicher Score, Punkte-Vergleiche (Spieler vs. Dealer) | `GameRecord`, `dict` Statistiken | ---> Allenfals entfernen
-| US-08 | Spieler | meine Spielhistorie als CSV exportieren | ich die Daten in externen Tools auswerten kann | Klick auf „CSV Export"-Button | CSV-Datei (pyjack_history.csv) wird heruntergeladen | `csv.DictWriter`, `Blob` |
-| US-09 | Spieler | Tischfarbe und Kartenrückseite anpassen | ich das Spielerlebnis personalisieren kann | Auswahl aus Dropdown-Listen in Einstellungen | Tischfarbe und Kartenrückseite ändern sich sofort auf dem Spielfeld | `AppSettings`, `str` | --> Allenfals entfernen
-| US-10 | Spieler | meine Einstellungen dauerhaft speichern | ich sie nicht bei jedem Start neu konfigurieren muss | Änderungen vornehmen + Klick auf „Speichern" | Einstellungen werden gespeichert, beim nächsten Start erneut angewendet | `AppSettings` (ORM Model) | --> Allenfalls entfernen
+| US-07 | Spieler | meine Spielhistorie als CSV exportieren | ich die Daten in externen Tools auswerten kann | Klick auf „CSV Export"-Button | CSV-Datei (pyjack_history.csv) wird heruntergeladen | `csv.DictWriter`, `Blob` |
 
 ---
 
@@ -166,7 +163,7 @@ GameUI                (Spieloberfläche, refresh, Event-Handler)
 | **Akteur** | Spieler |
 | **Vorbedingung** | Mindestens ein gespeichertes Spiel vorhanden |
 | **Auslöser** | Spieler navigiert zu `/history` |
-| **Normalablauf** | 1. System lädt Statistiken aus DB · 2. Drei Diagramme werden gerendert (Donut, Line, Bar) · 3. Letzten 10 Spiele werden tabellarisch aufgelistet |
+| **Normalablauf** | 1. System lädt Statistiken aus DB · 2. Ein Diagramm wird gerendert (Kreis) · 3. Letzten 10 Spiele werden tabellarisch aufgelistet |
 | **Alternativer Ablauf** | Keine Spiele vorhanden → Hinweistext wird angezeigt |
 | **Nachbedingung** | Keine Datenveränderung |
 
@@ -179,7 +176,7 @@ GameUI                (Spieloberfläche, refresh, Event-Handler)
 | **Akteur** | Spieler |
 | **Vorbedingung** | Einstellungsseite `/settings` geöffnet |
 | **Auslöser** | Spieler nimmt Änderungen vor und klickt «Einstellungen speichern» |
-| **Normalablauf** | 1. Spieler passt Name, Farben, Audio oder Gameplay-Optionen an · 2. Audio-Änderungen werden sofort live übernommen · 3. Klick auf Speichern → `save_settings()` schreibt in SQLite |
+| **Normalablauf** | 1. Spieler passt die Tischfarbe oder Gameplay-Optionen an · 2. Klick auf Speichern → `save_settings()` schreibt in SQLite |
 | **Nachbedingung** | `app_settings` (ID=1) in DB aktualisiert |
 
 ### UC-04: Spielhistorie exportieren
@@ -273,15 +270,8 @@ CREATE TABLE game_records (
 -- Einstellungen (Singleton – immer genau 1 Zeile mit ID=1)
 CREATE TABLE app_settings (
     id            INTEGER      PRIMARY KEY DEFAULT 1,
-    music_volume  REAL         DEFAULT 0.5,
-    sfx_volume    REAL         DEFAULT 0.6,
-    music_enabled BOOLEAN      DEFAULT 1,
-    sfx_enabled   BOOLEAN      DEFAULT 1,
-    player_name   VARCHAR(50)  DEFAULT 'Spieler',
     table_color   VARCHAR(30)  DEFAULT 'green',
-    card_back     VARCHAR(20)  DEFAULT 'blue',
     show_hints    BOOLEAN      DEFAULT 1,
-    animations    BOOLEAN      DEFAULT 1,
     auto_stand_21 BOOLEAN      DEFAULT 1
 );
 ```
@@ -323,9 +313,7 @@ CREATE TABLE app_settings (
 |---|---|
 | Vue.js 3 | Reaktive UI-Engine im Browser |
 | Quasar Framework | UI-Komponenten (Buttons, Tabs, Slider, Switch) |
-| Apache ECharts | Interaktive Diagramme (Donut, Line, Bar) |
-| Web Audio API | Soundeffekte und Hintergrundmusik (Browser-nativ) |
-| Google Fonts (Cinzel, Inter) | Typografie |
+| Apache ECharts | Interaktive Diagramme (Donut) |
 
 ---
 
@@ -352,24 +340,24 @@ venv\Scripts\activate           # Windows
 pip install -r requirements.txt
 
 # 4. Anwendung starten
-python pyjack.py
+python main.py
 ```
 
 ### Zugriff
 Nach dem Start ist die Anwendung unter [**http://localhost:8080**](http://localhost:8080) erreichbar.  
-Die Datenbank `pyjack.db` wird automatisch beim ersten Start erstellt.
-
-> **Hinweis zur Migration:** Falls eine ältere Datenbankversion vorhanden ist, führt `_migrate()` beim Start automatisch fehlende Spalten nach — ohne Datenverlust.
+Die Datenbank `pyjack2.db` wird automatisch beim ersten Start erstellt.
 
 ---
 
 ## Projektstruktur
 
 ```
-pyjack/
-│
-├── pyjack2.0.py            # Hauptdatei (komplette Anwendung, alle Schichten)
-├── pyjack2.0.db            # SQLite-Datenbank (wird automatisch erstellt)
+PyJack-2.0/
+│  
+├── PyJack2              # Programmordner
+  ├── main.py            # Präsentationsschicht (NiceGUI Pages)
+  ├── domain.py          # Domänenlogik (Game, Cards, Player...)
+  ├── database.py        # Persistenzschicht (SQLAlchemy ORM)
 ├── requirements.txt     # Python-Abhängigkeiten
 ├── README.md            # Projektdokumentation
 └── .gitignore           # Git-Ausschlüsse
@@ -387,7 +375,7 @@ pyjack/
 | **Persistenzschicht** | DatabaseManager, ORM-Modelle, Migration | [VORNAME NACHNAME 2] |
 | **UI & Präsentation** | GameUI, alle 4 Pages, Navigation | [VORNAME NACHNAME 3] |
 | **CSS & Design** | Poker-Karten, Farbpaletten, Animationen | [VORNAME NACHNAME 1] |
-| **Charts** | ECharts Integration (Donut, Line, Bar) | [VORNAME NACHNAME 3] |
+| **Charts** | ECharts Integration (Kreisdiagram) | [VORNAME NACHNAME 3] |
 | **Dokumentation** | README, Use Cases, User Stories | Alle |
 | **Testing & Bugfixing** | Manuelle Tests, DB-Migration, Bugfixes | Alle |
 
