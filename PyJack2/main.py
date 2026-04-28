@@ -228,6 +228,7 @@ class GamePageUI:
                 self.dialog_message = ui.label('').classes('text-lg text-gray-300 mb-8')
                 ui.button('Nochmal spielen', on_click=self.handle_new_game).props('color=green-700 size=lg').classes('w-full')
                 ui.button('Zurück zum Menü', on_click=lambda: ui.navigate.to('/')).props('flat color=gray-400').classes('w-full mt-2')
+        self.update_ui()
 
 @ui.page('/game')
 def render_game() -> None:
