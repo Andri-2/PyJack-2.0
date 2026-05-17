@@ -1,9 +1,9 @@
 import csv
 import io
-import base64
+import re
 from nicegui import ui
 from database import DatabaseManager
-from domain import Game, Card, GameState
+from domain import Game, Card, GameState, Winner
 
 db_manager = DatabaseManager()
 
@@ -13,6 +13,7 @@ db_manager = DatabaseManager()
 # ============================================================================
 @ui.page('/')
 def render_main_menu() -> None:
+    """Rendert das Hauptmenü mit Navigation zu Spiel, Historie und Einstellungen."""
     ui.query('body').style('margin: 0; padding: 0; background-color: #0f172a;')
     with ui.column().classes('w-full min-h-screen items-center justify-center text-white p-0 m-0'):
         with ui.column().classes('items-center mb-12'):
@@ -34,10 +35,12 @@ def render_main_menu() -> None:
 # SPIELTISCH (/game)
 # ============================================================================
 class GamePageUI:
-    def __init__(self):
-        self.settings = db_manager.get_settings()
-        self.game = Game(db_manager)
+    """Verwaltet den gesamten UI-Zustand und das Layout des Spieltisches."""
 
+    def __init__(self):
+        """Initialisiert Spielinstanz, Einstellungen und alle UI-Referenzen."""
+        self.settings = db_manager.get_settings()
+        self.game = Game()
         self.container_dealer_cards = None
         self.container_player_cards = None
         self.label_dealer_score = None
@@ -51,32 +54,29 @@ class GamePageUI:
         self.dialog_message = None
 
     def render_card_obj(self, card: Card) -> None:
+        """Rendert eine einzelne sichtbare Karte als NiceGUI-Karten-Element.
+        Args:
+            card: Das Card-Objekt mit Rang und Farbe.
+        """
         text_color = 'red' if card.suit.color == 'red' else 'black'
-        # Scale back visually to fix browser zoom layout issues and remove any margin/overflow with inline padding.
-        # Add position relative to place bottom items absolutely inside the border.
         with ui.card().style(f'width: 70px; height: 100px; position: relative; padding: 4px; background-color: white; color: {text_color}; border: 1px solid gray; border-radius: 6px; box-shadow: 2px 2px 5px rgba(0,0,0,0.3);'):
-            # Top-Left Element
             with ui.column().style('position: absolute; top: 4px; left: 4px; align-items: center; gap: 0; line-height: 1;'):
                 ui.label(card.rank.symbol).style('font-weight: bold; font-size: 14px; margin: 0; padding: 0;')
                 ui.label(card.suit.symbol).style('font-size: 12px; margin: 0; padding: 0;')
-
-            # Center Symbol
             center_sym = {'J': '♞', 'Q': '♛', 'K': '♚'}.get(card.rank.symbol, card.suit.symbol)
             with ui.row().style('position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);'):
                 ui.label(center_sym).style('font-size: 28px; font-weight: normal;')
-
-            # Bottom-Right Element (rotated)
             with ui.column().style('position: absolute; bottom: 4px; right: 4px; align-items: center; gap: 0; line-height: 1; transform: rotate(180deg);'):
                 ui.label(card.rank.symbol).style('font-weight: bold; font-size: 14px; margin: 0; padding: 0;')
                 ui.label(card.suit.symbol).style('font-size: 12px; margin: 0; padding: 0;')
 
     def render_hidden_card_obj(self) -> None:
+        """Rendert eine verdeckte Karte mit der gespeicherten Kartenrücken-Farbe."""
         back_color = self.settings.get('card_back', '#1e3a8a')
-        if back_color.startswith('bg-'):
-            back_color = '#1e3a8a'
         ui.card().style(f'width: 70px; height: 100px; background-color: {back_color}; border: 2px solid rgba(255,255,255,0.2); border-radius: 6px; box-shadow: 2px 2px 5px rgba(0,0,0,0.3);')
 
     def update_ui(self) -> None:
+        """Aktualisiert alle UI-Elemente basierend auf dem aktuellen Spielzustand."""
         if (
             self.container_dealer_cards is None
             or self.container_player_cards is None
@@ -92,7 +92,6 @@ class GamePageUI:
         ):
             return
 
-        # --- Dealer-Karten ---
         self.container_dealer_cards.clear()
         with self.container_dealer_cards:
             if self.game.dealer.hand.cards:
@@ -104,13 +103,11 @@ class GamePageUI:
                     for c in self.game.dealer.hand.cards:
                         self.render_card_obj(c)
 
-        # --- Spieler-Karten ---
         self.container_player_cards.clear()
         with self.container_player_cards:
             for c in self.game.player.hand.cards:
                 self.render_card_obj(c)
 
-        # --- Scores ---
         is_hidden = self.game.dealer.hide_first_card and self.game.state == GameState.PLAYER_TURN
         if is_hidden:
             self.label_dealer_score.text = f'Punkte: {self.game.dealer.get_visible_score()} + ?'
@@ -126,20 +123,18 @@ class GamePageUI:
                 hint_text = ' (Stand empfohlen)'
         self.label_player_score.text = f'Punkte: {player_pts}{hint_text}'
 
-        # --- Buttons ---
         is_active = self.game.can_player_act()
         self.btn_hit.set_enabled(is_active)
         self.btn_stand.set_enabled(is_active)
         self.btn_new.set_enabled(not is_active)
 
-        # --- Status & Dialog ---
         if self.game.state == GameState.GAME_OVER:
             self.label_game_status.text = 'Runde beendet!'
-            if self.game.winner == 'Spieler':
+            if self.game.winner == Winner.PLAYER:
                 self.dialog_title.text = 'GEWONNEN!'
                 self.dialog_title.classes(replace='text-3xl font-bold text-green-500 mb-2')
                 self.dialog_message.text = 'Glückwunsch!'
-            elif self.game.winner == 'Dealer':
+            elif self.game.winner == Winner.DEALER:
                 self.dialog_title.text = 'VERLOREN'
                 self.dialog_title.classes(replace='text-3xl font-bold text-red-500 mb-2')
                 self.dialog_message.text = 'Der Dealer gewinnt.'
@@ -154,12 +149,14 @@ class GamePageUI:
             self.label_game_status.text = 'Dealer zieht...'
 
     def handle_new_game(self) -> None:
+        """Startet eine neue Runde und aktualisiert die Anzeige."""
         if self.dialog_game_over is not None:
             self.dialog_game_over.close()
         self.game.start_new_game()
         self.update_ui()
 
     def handle_hit(self) -> None:
+        """Verarbeitet eine Hit-Aktion inkl. Auto-Stand bei 21 falls aktiviert."""
         self.game.player_hit()
         if (
             self.settings.get('auto_stand_21', True)
@@ -170,68 +167,82 @@ class GamePageUI:
         self.update_ui()
 
     def handle_stand(self) -> None:
+        """Verarbeitet eine Stand-Aktion und leitet den Dealer-Zug ein."""
         self.game.player_stand()
         self.update_ui()
 
+    def _build_navbar(self) -> None:
+        """Erstellt die Navigationsleiste mit Zurück-Button und Spieltitel."""
+        with ui.row().classes(
+            'w-full max-w-4xl justify-between items-center py-2 px-4 mb-2 mt-4 '
+            'bg-black/40 rounded-xl border border-white/10'
+        ):
+            ui.button('← Menü', on_click=lambda: ui.navigate.to('/')).props('flat color=yellow')
+            ui.label('PyJack Tisch').classes('text-xl font-bold text-yellow-500')
+            ui.label('OOP SS26').classes('text-xs text-gray-400')
+
+    def _build_dealer_area(self) -> None:
+        """Erstellt den Dealer-Bereich: Score-Label und Kartenanzeige."""
+        with ui.column().classes('w-full items-center bg-black/40 p-2 rounded-xl mb-2 shadow-inner'):
+            ui.label('DEALER').classes('text-gray-400 text-xs tracking-widest font-bold')
+            self.label_dealer_score = ui.label('-').classes('text-yellow-400 font-bold mb-1 text-sm')
+            self.container_dealer_cards = ui.row().classes('gap-3 justify-center min-h-[105px] flex-wrap')
+
+    def _build_player_area(self) -> None:
+        """Erstellt den Spieler-Bereich: Score-Label und Kartenanzeige."""
+        with ui.column().classes('w-full items-center bg-black/40 p-2 rounded-xl mt-2 shadow-inner'):
+            ui.label('SPIELER').classes('text-gray-400 text-xs tracking-widest font-bold')
+            self.label_player_score = ui.label('-').classes('text-green-400 font-bold mb-1 text-sm')
+            self.container_player_cards = ui.row().classes('gap-3 justify-center min-h-[105px] flex-wrap')
+
+    def _build_action_buttons(self) -> None:
+        """Erstellt die drei Aktions-Buttons: Neues Spiel, Hit, Stand."""
+        with ui.row().classes('gap-4 mt-6'):
+            self.btn_new = ui.button('Neues Spiel', on_click=self.handle_new_game) \
+                .props('color=green-900 size=md').classes('px-6 py-2')
+            self.btn_hit = ui.button('Hit', on_click=self.handle_hit) \
+                .props('color=blue-900 size=md').classes('px-6 py-2')
+            self.btn_hit.set_enabled(False)
+            self.btn_stand = ui.button('Stand', on_click=self.handle_stand) \
+                .props('color=orange-900 size=md').classes('px-6 py-2')
+            self.btn_stand.set_enabled(False)
+
+    def _build_game_over_dialog(self) -> None:
+        """Erstellt den modalen Game-Over-Dialog mit Ergebnis-Anzeige."""
+        with ui.dialog() as self.dialog_game_over, ui.card().classes(
+            'bg-slate-900 text-white items-center p-10 '
+            'border border-white/20 rounded-2xl shadow-2xl'
+        ):
+            self.dialog_title = ui.label('').classes('text-3xl font-bold mb-2')
+            self.dialog_message = ui.label('').classes('text-lg text-gray-300 mb-8')
+            ui.button('Nochmal spielen', on_click=self.handle_new_game) \
+                .props('color=green-700 size=lg').classes('w-full')
+            ui.button('Zurück zum Menü', on_click=lambda: ui.navigate.to('/')) \
+                .props('flat color=gray-400').classes('w-full mt-2')
+
     def build_layout(self) -> None:
+        """Baut das vollständige Spieltisch-Layout auf und initialisiert alle UI-Refs."""
         bg_color = self.settings.get('table_color', '#163824')
         ui.query('body').style(f'margin: 0; padding: 0; background-color: {bg_color};')
-
         with ui.column().classes('w-full min-h-screen items-center text-white p-0 m-0').style(
             f'background-color: {bg_color};'
         ):
-            # Navigationsleiste
-            with ui.row().classes(
-                'w-full max-w-4xl justify-between items-center py-2 px-4 mb-2 mt-4 '
-                'bg-black/40 rounded-xl border border-white/10'
-            ):
-                ui.button('← Menü', on_click=lambda: ui.navigate.to('/')).props('flat color=yellow')
-                ui.label('PyJack Tisch').classes('text-xl font-bold text-yellow-500')
-                ui.label('OOP SS26').classes('text-xs text-gray-400')
-
-            # Spielfeld
+            self._build_navbar()
             with ui.card().classes(
                 'w-full max-w-4xl bg-black/30 p-4 items-center '
                 'border border-white/10 shadow-2xl rounded-2xl min-h-[400px]'
             ):
-                # Dealer-Bereich
-                with ui.column().classes('w-full items-center bg-black/40 p-2 rounded-xl mb-2 shadow-inner'):
-                    ui.label('DEALER').classes('text-gray-400 text-xs tracking-widest font-bold')
-                    self.label_dealer_score = ui.label('-').classes('text-yellow-400 font-bold mb-1 text-sm')
-                    self.container_dealer_cards = ui.row().classes('gap-3 justify-center min-h-[105px] flex-wrap')
-
+                self._build_dealer_area()
                 self.label_game_status = ui.label('Klicke auf Neues Spiel').classes(
                     'text-xl font-bold text-white my-3 drop-shadow'
                 )
-
-                # Spieler-Bereich
-                with ui.column().classes('w-full items-center bg-black/40 p-2 rounded-xl mt-2 shadow-inner'):
-                    ui.label('SPIELER').classes('text-gray-400 text-xs tracking-widest font-bold')
-                    self.label_player_score = ui.label('-').classes('text-green-400 font-bold mb-1 text-sm')
-                    self.container_player_cards = ui.row().classes('gap-3 justify-center min-h-[105px] flex-wrap')
-
-                # Aktions-Buttons
-                with ui.row().classes('gap-4 mt-6'):
-                    self.btn_new = ui.button('Neues Spiel', on_click=self.handle_new_game) \
-                        .props('color=green-900 size=md').classes('px-6 py-2')
-                    self.btn_hit = ui.button('Hit', on_click=self.handle_hit) \
-                        .props('color=blue-900 size=md').classes('px-6 py-2')
-                    self.btn_stand = ui.button('Stand', on_click=self.handle_stand) \
-                        .props('color=orange-900 size=md').classes('px-6 py-2')
-
-            # Game-Over-Dialog
-            with ui.dialog() as self.dialog_game_over, ui.card().classes(
-                'bg-slate-900 text-white items-center p-10 '
-                'border border-white/20 rounded-2xl shadow-2xl'
-            ):
-                self.dialog_title = ui.label('').classes('text-3xl font-bold mb-2')
-                self.dialog_message = ui.label('').classes('text-lg text-gray-300 mb-8')
-                ui.button('Nochmal spielen', on_click=self.handle_new_game).props('color=green-700 size=lg').classes('w-full')
-                ui.button('Zurück zum Menü', on_click=lambda: ui.navigate.to('/')).props('flat color=gray-400').classes('w-full mt-2')
-        self.update_ui()
+                self._build_player_area()
+                self._build_action_buttons()
+            self._build_game_over_dialog()
 
 @ui.page('/game')
 def render_game() -> None:
+    """Rendert den Spieltisch und initialisiert eine neue GamePageUI-Instanz."""
     page = GamePageUI()
     page.build_layout()
 
@@ -240,6 +251,7 @@ def render_game() -> None:
 # ============================================================================
 @ui.page('/history')
 def render_history() -> None:
+    """Rendert die Spielhistorie inkl. Tabellenansicht, CSV-Export und Statistiken."""
     def handle_csv_export():
         games = db_manager.get_all_games_asc()
         output = io.StringIO()
@@ -281,7 +293,21 @@ def render_history() -> None:
             ui.label('Spielhistorie').classes('text-2xl font-bold text-yellow-500 drop-shadow')
             with ui.row().classes('gap-2'):
                 ui.button('CSV Export', on_click=handle_csv_export).props('outline color=blue')
-                ui.button('Löschen', on_click=lambda: (db_manager.delete_all_games(), ui.navigate.reload())).props('outline color=red')
+                
+                def confirm_delete():
+                    with ui.dialog() as confirm_dialog, ui.card().classes('bg-slate-900 text-white p-8 border border-red-500/30 rounded-2xl items-center'):
+                        ui.label('Alle Spiele löschen?').classes('text-xl font-bold text-red-400 mb-2')
+                        ui.label('Diese Aktion kann nicht rückgängig gemacht werden.').classes('text-gray-400 mb-6 text-center')
+                        with ui.row().classes('gap-4 w-full'):
+                            ui.button('Abbrechen', on_click=confirm_dialog.close).props('flat color=gray').classes('flex-1')
+                            def do_delete():
+                                db_manager.delete_all_games()
+                                confirm_dialog.close()
+                                ui.navigate.reload()
+                            ui.button('Löschen', on_click=do_delete).props('color=red').classes('flex-1')
+                    confirm_dialog.open()
+                
+                ui.button('Löschen', on_click=confirm_delete).props('outline color=red')
             
         stats = db_manager.get_statistics()
         
@@ -327,7 +353,7 @@ def render_history() -> None:
                 
                 rows = []
                 for g in games:
-                    win_icon = '�' if g.winner == 'Spieler' else ('🔴' if g.winner == 'Dealer' else '⚪')
+                    win_icon = '\U0001F3C6' if g.winner == 'Spieler' else ('\U0001F534' if g.winner == 'Dealer' else '\U000026AA')
                     rows.append({
                         'time': g.timestamp.strftime('%d.%m.%Y %H:%M'),
                         'winner': f"{win_icon} {g.winner}",
@@ -343,14 +369,26 @@ def render_history() -> None:
 # ============================================================================
 @ui.page('/settings')
 def render_settings() -> None:
+    """Rendert die Einstellungsseite zur Konfiguration von Gameplay und Optik."""
     ui.query('body').style('margin: 0; padding: 0; background-color: #0f172a;')
     s = db_manager.get_settings()
     
     def save() -> None:
+        """Speichert die Einstellungen nach Validierung in der Datenbank."""
+        color = color_input.value.strip()
+        card_back = cardback_input.value.strip()
+        if not re.match(r'^#[0-9A-Fa-f]{6}$', color) or not re.match(r'^#[0-9A-Fa-f]{6}$', card_back):
+            ui.notify(
+                'Ungültige Farbe! Bitte einen gültigen Hex-Code eingeben (z.B. #163824).',
+                color='negative'
+            )
+            return
         db_manager.save_settings(
             show_hints=hint_sw.value,
             auto_stand_21=stand_sw.value,
-            table_color=color_input.value
+            table_color=color,
+            card_back=card_back,
+            animations=anim_sw.value
         )
         ui.notify('Einstellungen erfolgreich gespeichert!', color='positive')
 
@@ -397,5 +435,27 @@ def render_settings() -> None:
                             color_preview.style(f'background-color: {e.value}')
                         color_input.on('input', update_color)
 
+                ui.separator().classes('border-white/5 my-2')
+
+                with ui.row().classes('w-full justify-between items-center py-3 border-b border-white/5'):
+                    with ui.column().classes('gap-1'):
+                        ui.label('Kartenrücken-Farbe').classes('text-lg font-medium')
+                        ui.label('Farbe der Kartenrückseite am Tisch (Hex).').classes('text-sm text-gray-400')
+                    with ui.row().classes('items-center gap-2'):
+                        card_back_val = s.get('card_back', '#1e3a8a')
+                        cardback_preview = ui.element('div').classes('w-8 h-8 rounded shrink-0 border border-white/20').style(f'background-color: {card_back_val}')
+                        cardback_input = ui.input(value=card_back_val).classes('w-32 text-lg').props('dense standout dark')
+                        def update_cardback(e):
+                            cardback_preview.style(f'background-color: {e.value}')
+                        cardback_input.on('input', update_cardback)
+
+                with ui.row().classes('w-full justify-between items-center py-3'):
+                    with ui.column().classes('gap-1'):
+                        ui.label('Animationen').classes('text-lg font-medium')
+                        ui.label('Aktiviert visuelle Übergänge und Effekte.').classes('text-sm text-gray-400')
+                    anim_sw = ui.switch(value=s.get('animations', True)).props('color=green')
+
 if __name__ in {"__main__", "__mp_main__"}:
+    import logging
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(name)s] %(levelname)s: %(message)s')
     ui.run(title='PyJack', favicon='🎰', dark=True)
