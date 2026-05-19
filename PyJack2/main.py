@@ -330,7 +330,7 @@ def render_history() -> None:
             # Statistik Details
             with ui.card().classes('flex-1 bg-black/30 p-6 border border-white/10 rounded-2xl items-center justify-center'):
                 ui.label(f"Gesamtspiele: {stats['total_games']}").classes('text-xl font-bold mb-2')
-                ui.label(f"👑 Spieler-Siege: {stats['player_wins']}").classes('text-green-400 text-lg')
+                ui.label(f"🏆 Spieler-Siege: {stats['player_wins']}").classes('text-green-400 text-lg')
                 ui.label(f"💀 Dealer-Siege: {stats['dealer_wins']}").classes('text-red-400 text-lg')
                 ui.label(f"👔 Unentschieden: {stats['draws']}").classes('text-yellow-400 text-lg')
                 ui.label(f"📈 Win-Rate: {stats['player_win_rate']:.1f}%").classes('text-blue-400 text-xl font-bold mt-4')
@@ -371,7 +371,7 @@ def render_history() -> None:
                     # g.winner may be a SQLAlchemy ColumnElement; cast to str to avoid
                     # invalid truthiness checks when comparing in a Python conditional
                     winner_val = str(g.winner)
-                    win_icon = '\U0001F3C6' if winner_val == 'Spieler' else ('\U0001F534' if winner_val == 'Dealer' else '\U000026AA')
+                    win_icon = '\U0001F3C6' if winner_val == 'Spieler' else ('\U0001F480' if winner_val == 'Dealer' else '\U0001F454')
                     rows.append({
                         'time': g.timestamp.strftime('%d.%m.%Y %H:%M'),
                         'winner': f"{win_icon} {g.winner}",
