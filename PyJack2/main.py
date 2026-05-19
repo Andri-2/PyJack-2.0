@@ -148,11 +148,24 @@ class GamePageUI:
         else:
             self.label_game_status.text = 'Dealer zieht...'
 
+    def save_game_if_over(self) -> None:
+        """Speichert das Spiel in der Datenbank, wenn es beendet ist."""
+        if self.game.state == GameState.GAME_OVER and self.game.last_result:
+            res = self.game.last_result
+            db_manager.save_game(
+                winner=res['winner'],
+                player_score=res['player_score'],
+                dealer_score=res['dealer_score'],
+                player_cards=res['player_cards'],
+                dealer_cards=res['dealer_cards']
+            )
+
     def handle_new_game(self) -> None:
         """Startet eine neue Runde und aktualisiert die Anzeige."""
         if self.dialog_game_over is not None:
             self.dialog_game_over.close()
         self.game.start_new_game()
+        self.save_game_if_over()
         self.update_ui()
 
     def handle_hit(self) -> None:
@@ -164,11 +177,13 @@ class GamePageUI:
             and self.game.state == GameState.PLAYER_TURN
         ):
             self.game.player_stand()
+        self.save_game_if_over()
         self.update_ui()
 
     def handle_stand(self) -> None:
         """Verarbeitet eine Stand-Aktion und leitet den Dealer-Zug ein."""
         self.game.player_stand()
+        self.save_game_if_over()
         self.update_ui()
 
     def _build_navbar(self) -> None:
@@ -353,7 +368,10 @@ def render_history() -> None:
                 
                 rows = []
                 for g in games:
-                    win_icon = '\U0001F3C6' if g.winner == 'Spieler' else ('\U0001F534' if g.winner == 'Dealer' else '\U000026AA')
+                    # g.winner may be a SQLAlchemy ColumnElement; cast to str to avoid
+                    # invalid truthiness checks when comparing in a Python conditional
+                    winner_val = str(g.winner)
+                    win_icon = '\U0001F3C6' if winner_val == 'Spieler' else ('\U0001F534' if winner_val == 'Dealer' else '\U000026AA')
                     rows.append({
                         'time': g.timestamp.strftime('%d.%m.%Y %H:%M'),
                         'winner': f"{win_icon} {g.winner}",
@@ -375,8 +393,8 @@ def render_settings() -> None:
     
     def save() -> None:
         """Speichert die Einstellungen nach Validierung in der Datenbank."""
-        color = color_input.value.strip()
-        card_back = cardback_input.value.strip()
+        color = (color_input.value or '').strip()
+        card_back = (cardback_input.value or '').strip()
         if not re.match(r'^#[0-9A-Fa-f]{6}$', color) or not re.match(r'^#[0-9A-Fa-f]{6}$', card_back):
             ui.notify(
                 'Ungültige Farbe! Bitte einen gültigen Hex-Code eingeben (z.B. #163824).',
