@@ -338,6 +338,7 @@ venv\Scripts\activate           # Windows
 pip install -r requirements.txt
 
 # 4. Anwendung starten
+cd PyJack2
 python main.py
 ```
 
