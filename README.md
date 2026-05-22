@@ -56,14 +56,12 @@ Das Projekt entstand als Erweiterung des gleichnamigen CLI-Projekts aus dem Vors
 
 ### Statistiken & Analyse
 - 📊 Donut-Chart: Sieg-/Niederlage-Verteilung
-- 📈 Liniendiagramm: Kumulative Gewinnrate über alle Spiele
-- 📉 Balkendiagramm: Punkte-Vergleich (Spieler vs. Dealer)
 - 📁 CSV-Export der Spielhistorie (client-seitig via Blob-API)
 
-### Personalisierung  ---> Allenfalls reduzieren, basierend auf scope
-- 5 Tischfarben (Grün, Blau, Burgunder, Mitternacht, Braun)
-- 4 Karten-Rückseiten-Farben
-- Spielername, Audio-Lautstärke, Animations-Toggle
+### Personalisierung
+- Tischfarbe (freie Hex-Eingabe, z.B. `#163824`)
+- Kartenrücken-Farbe (freie Hex-Eingabe, z.B. `#1e3a8a`)
+- Spielhinweise ein/aus, Auto-Stand bei 21, Animationen ein/aus
 - Alle Einstellungen werden persistent in SQLite gespeichert
 
 ---
@@ -132,7 +130,7 @@ GamePageUI            (Spieloberfläche, refresh, Event-Handler)
 | US-02 | Spieler | eine Karte ziehen (Hit) | ich meinen Punktestand erhöhen kann | Klick auf „Hit"-Button | Neue Karte wird auf der Hand angezeigt, Punktestand aktualisiert sich | `Game`, `Hand`, `Card` |
 | US-03 | Spieler | stehen bleiben (Stand) | der Dealer seinen Zug ausführt und ein Ergebnis berechnet wird | Klick auf „Stand"-Button | Dealer deckt auf und zieht automatisch, Gewinner wird angezeigt | `Game`, `Dealer`, `GameState` |
 | US-04 | Spieler | den aktuellen Punktestand jederzeit sehen | ich fundierte Spielentscheidungen treffen kann | Spieler schaut auf das Spielfeld | Aktueller Punktestand (z.B. „17 Punkte") ist sichtbar | `int`, `Hand` |
-| US-05 | Spieler | eine Spielempfehlung (Hit/Stand) erhalten | ich die Spielstrategie erlernen kann | Klick auf Infosymbol | „Hit empfohlen" oder „Stand empfohlen" wird angezeigt | `bool` | ----> Allenfalls entfernen
+| US-05 | Spieler | eine Spielempfehlung (Hit/Stand) erhalten | ich die Spielstrategie erlernen kann | Spiel läuft, `show_hints = True` in Einstellungen | „Hit empfohlen" oder „Stand empfohlen" wird automatisch im Punktestand-Label angezeigt | `bool` |
 | US-06 | Spieler | meine Spielhistorie einsehen | ich meine Leistung über Zeit verfolgen kann | Klick auf „Spielhistorie"-Tab | Liste der bisherigen Spiele + Diagramme mit Gewinn/Verlust-Übersicht | `List[GameRecord]`, `dict` Statistiken |
 | US-07 | Spieler | meine Spielhistorie als CSV exportieren | ich die Daten in externen Tools auswerten kann | Klick auf „CSV Export"-Button | CSV-Datei (pyjack_history.csv) wird heruntergeladen | `csv.DictWriter`, `Blob` |
 
@@ -163,7 +161,7 @@ GamePageUI            (Spieloberfläche, refresh, Event-Handler)
 | **Akteur** | Spieler |
 | **Vorbedingung** | Mindestens ein gespeichertes Spiel vorhanden |
 | **Auslöser** | Spieler navigiert zu `/history` |
-| **Normalablauf** | 1. System lädt Statistiken aus DB · 2. Ein Diagramm wird gerendert (Kreis) · 3. Letzten 10 Spiele werden tabellarisch aufgelistet |
+| **Normalablauf** | 1. System lädt Statistiken aus DB · 2. Ein Diagramm wird gerendert (Kreis) · 3. Letzten 50 Spiele werden tabellarisch aufgelistet |
 | **Alternativer Ablauf** | Keine Spiele vorhanden → Hinweistext wird angezeigt |
 | **Nachbedingung** | Keine Datenveränderung |
 
@@ -246,9 +244,9 @@ GamePageUI            (Spieloberfläche, refresh, Event-Handler)
 
 | ID | Beschreibung | Vorbedingung | Eingabe | Erwartetes Ergebnis | Priorität |
 |---|---|---|---|---|---|
-| TC-14a | Hinweis „Hit empfohlen" wird angezeigt | Spiel läuft, Spieler hat niedrigen Punktestand (z.B. ≤ 11) | Klick auf Infosymbol | „Hit empfohlen" wird angezeigt | Niedrig |
-| TC-14b | Hinweis „Stand empfohlen" wird angezeigt | Spiel läuft, Spieler hat hohen Punktestand (z.B. ≥ 17) | Klick auf Infosymbol | „Stand empfohlen" wird angezeigt | Niedrig |
-| TC-14c | Hinweis nicht sichtbar wenn deaktiviert | `show_hints = False` in Einstellungen | Klick auf Infosymbol | Kein Hinweis erscheint | Niedrig |
+| TC-14a | Hinweis „Hit empfohlen" wird angezeigt | Spiel läuft, Spieler hat niedrigen Punktestand (z.B. ≤ 11) | 'show_hints = True' | „Hit empfohlen" wird angezeigt | Niedrig |
+| TC-14b | Hinweis „Stand empfohlen" wird angezeigt | Spiel läuft, Spieler hat hohen Punktestand (z.B. ≥ 17) | 'show_hints = True' | „Stand empfohlen" wird angezeigt | Niedrig |
+| TC-14c | Hinweis nicht sichtbar wenn deaktiviert | `show_hints = False` in Einstellungen | 'show_hints = True' | Kein Hinweis erscheint | Niedrig |
 
 ---
 
@@ -270,8 +268,10 @@ CREATE TABLE game_records (
 -- Einstellungen (Singleton – immer genau 1 Zeile mit ID=1)
 CREATE TABLE app_settings (
     id            INTEGER      PRIMARY KEY DEFAULT 1,
-    table_color   VARCHAR(30)  DEFAULT 'green',
+    table_color   VARCHAR(30)  DEFAULT '#163824',
+    card_back     VARCHAR(20)  DEFAULT '#1e3a8a',
     show_hints    BOOLEAN      DEFAULT 1,
+    animations    BOOLEAN      DEFAULT 1,
     auto_stand_21 BOOLEAN      DEFAULT 1
 );
 ```
@@ -279,22 +279,20 @@ CREATE TABLE app_settings (
 **Entity-Relationship:**
 
 ```
-┌──────────────────────┐        ┌──────────────────────┐
-│     game_records     │        │     app_settings      │
-├──────────────────────┤        ├──────────────────────┤
-│ PK id         INT    │        │ PK id = 1     INT    │
-│    timestamp DATETIME│        │    music_volume REAL  │
-│    winner    VARCHAR │        │    sfx_volume   REAL  │
-│    player_score INT  │        │    music_enabled BOOL │
-│    dealer_score INT  │        │    sfx_enabled   BOOL │
-│    player_cards TEXT │        │    player_name VARCHAR│
-│    dealer_cards TEXT │        │    table_color  VARCHAR│
-└──────────────────────┘        │    card_back    VARCHAR│
-  n Einträge – 1 pro Spiel      │    show_hints   BOOL  │
-                                │    animations   BOOL  │
-                                │    auto_stand_21 BOOL │
-                                └──────────────────────┘
-                                  Singleton – immer ID=1
+┌──────────────────────┐        ┌────────────────────────┐
+│     game_records     │        │     app_settings       │
+├──────────────────────┤        ├────────────────────────┤
+│ PK id         INT    │        │ PK id = 1     INT      │
+│    timestamp DATETIME│        │    table_color  VARCHAR│
+│    winner    VARCHAR │        │    card_back    VARCHAR│
+│    player_score INT  │        │    show_hints   BOOL   │
+│    dealer_score INT  │        │    animations   BOOL   │
+│    player_cards TEXT │        │    auto_stand_21 BOOL  │
+│    dealer_cards TEXT │        └────────────────────────┘
+└──────────────────────┘        Singleton – immer ID=1 
+  n Einträge – 1 pro Spiel      
+                                
+                                                    
 ```
 
 ---
@@ -328,7 +326,7 @@ CREATE TABLE app_settings (
 
 ```bash
 # 1. Repository klonen
-git clone https://github.com/[Andri-2]/pyjack.git
+git clone https://github.com/Andri-2/PyJack-2.0
 cd pyjack
 
 # 2. Virtuelle Umgebung erstellen (empfohlen)
@@ -345,7 +343,7 @@ python main.py
 
 ### Zugriff
 Nach dem Start ist die Anwendung unter [**http://localhost:8080**](http://localhost:8080) erreichbar.  
-Die Datenbank `pyjack2.db` wird automatisch beim ersten Start erstellt.
+Die Datenbank `pyjack.db` wird automatisch beim ersten Start erstellt.
 
 ---
 
@@ -362,8 +360,6 @@ PyJack-2.0/
 ├── README.md            # Projektdokumentation
 └── .gitignore           # Git-Ausschlüsse
 ```
-
-> Da NiceGUI eine Single-File-Architektur unterstützt und der Projektumfang dies erlaubt, sind alle Schichten in `pyjack.py` implementiert. Die logische Trennung der Schichten ist durch Klassensegmentierung und Kommentare klar erkennbar.
 
 ---
 
