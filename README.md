@@ -367,8 +367,7 @@ PyJack-2.0/
 |---|---|---|
 | **Domain Layer** | Klassen: Card, Deck, Hand, Player, Dealer, Game, Enums | [VORNAME NACHNAME 1] |
 | **Persistenzschicht** | DatabaseManager, ORM-Modelle, Migration | [VORNAME NACHNAME 2] |
-| **UI & Präsentation** | GameUI, alle 4 Pages, Navigation | [VORNAME NACHNAME 3] |
-| **CSS & Design** | Poker-Karten, Farbpaletten, Animationen | [VORNAME NACHNAME 1] |
+| **UI & Präsentation** | UI-Design, Seitengestaltung, Farbpaletten, Navigation | [VORNAME NACHNAME 3] |
 | **Charts** | ECharts Integration (Kreisdiagram) | [VORNAME NACHNAME 3] |
 | **Dokumentation** | README, Use Cases, User Stories | Alle |
 | **Testing & Bugfixing** | Manuelle Tests, DB-Migration, Bugfixes | Alle |
