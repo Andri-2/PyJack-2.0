@@ -20,7 +20,7 @@ def render_main_menu() -> None:
             ui.label('🎰').classes('text-7xl mb-4')
             ui.label('PYJACK').classes('text-6xl font-bold text-yellow-500 tracking-widest drop-shadow-lg')
             ui.label('B L A C K J A C K').classes('text-yellow-500/50 tracking-[0.5em] text-sm mt-2')
-            ui.label('FHNW Wirtschaftsinformatik | OOP SS26').classes('text-xs text-gray-400 mt-6 tracking-widest')
+            ui.label('FHNW Wirtschaftsinformatik | OOP FS26').classes('text-xs text-gray-400 mt-6 tracking-widest')
 
         with ui.column().classes('items-center gap-4 w-72'):
             ui.button('🃏 Spiel starten', on_click=lambda: ui.navigate.to('/game')) \
@@ -194,7 +194,7 @@ class GamePageUI:
         ):
             ui.button('← Menü', on_click=lambda: ui.navigate.to('/')).props('flat color=yellow')
             ui.label('PyJack Tisch').classes('text-xl font-bold text-yellow-500')
-            ui.label('OOP SS26').classes('text-xs text-gray-400')
+            ui.label('OOP FS26').classes('text-xs text-gray-400')
 
     def _build_dealer_area(self) -> None:
         """Erstellt den Dealer-Bereich: Score-Label und Kartenanzeige."""
@@ -313,7 +313,7 @@ def render_history() -> None:
                     with ui.dialog() as confirm_dialog, ui.card().classes('bg-slate-900 text-white p-8 border border-red-500/30 rounded-2xl items-center'):
                         ui.label('Alle Spiele löschen?').classes('text-xl font-bold text-red-400 mb-2')
                         ui.label('Diese Aktion kann nicht rückgängig gemacht werden.').classes('text-gray-400 mb-6 text-center')
-                        with ui.row().classes('gap-4 w-full'):
+                        with ui.row().classes('gap-4 w-full'): 
                             ui.button('Abbrechen', on_click=confirm_dialog.close).props('flat color=gray').classes('flex-1')
                             def do_delete():
                                 db_manager.delete_all_games()
@@ -405,8 +405,7 @@ def render_settings() -> None:
             show_hints=hint_sw.value,
             auto_stand_21=stand_sw.value,
             table_color=color,
-            card_back=card_back,
-            animations=anim_sw.value
+            card_back=card_back
         )
         ui.notify('Einstellungen erfolgreich gespeichert!', color='positive')
 
@@ -466,12 +465,6 @@ def render_settings() -> None:
                         def update_cardback(e):
                             cardback_preview.style(f'background-color: {e.value}')
                         cardback_input.on('input', update_cardback)
-
-                with ui.row().classes('w-full justify-between items-center py-3'):
-                    with ui.column().classes('gap-1'):
-                        ui.label('Animationen').classes('text-lg font-medium')
-                        ui.label('Aktiviert visuelle Übergänge und Effekte.').classes('text-sm text-gray-400')
-                    anim_sw = ui.switch(value=s.get('animations', True)).props('color=green')
 
 if __name__ in {"__main__", "__mp_main__"}:
     import logging

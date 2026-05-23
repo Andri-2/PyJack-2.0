@@ -31,7 +31,6 @@ class AppSettings(Base):
     table_color = Column(String(30), default='#163824')
     card_back = Column(String(20), default='#1e3a8a')
     show_hints = Column(Boolean, default=True)
-    animations = Column(Boolean, default=True)
     auto_stand_21 = Column(Boolean, default=True)
 
 
@@ -171,7 +170,6 @@ class DatabaseManager:
                 'table_color': s.table_color or '#163824',
                 'card_back': s.card_back or '#1e3a8a',
                 'show_hints': s.show_hints if s.show_hints is not None else True,
-                'animations': s.animations if s.animations is not None else True,
                 'auto_stand_21': s.auto_stand_21 if s.auto_stand_21 is not None else True,
             }
 
