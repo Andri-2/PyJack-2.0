@@ -7,7 +7,7 @@
 ![FHNW](https://img.shields.io/badge/FHNW-BSc_WI_OOP_SS26-darkblue)
 
 > Browserbasierende Blackjack-Webanwendung entwickelt im Rahmen des Moduls  
-> **Objektorientierte Programmierung (OOP), Sommersemester 2026**  
+> **Objektorientierte Programmierung (OOP), Frühlingssemester 2026**  
 > BSc Wirtschaftsinformatik – Fachhochschule Nordwestschweiz (FHNW)
 
 ---
@@ -61,7 +61,7 @@ Das Projekt entstand als Erweiterung des gleichnamigen CLI-Projekts aus dem Vors
 ### Personalisierung
 - Tischfarbe (freie Hex-Eingabe, z.B. `#163824`)
 - Kartenrücken-Farbe (freie Hex-Eingabe, z.B. `#1e3a8a`)
-- Spielhinweise ein/aus, Auto-Stand bei 21, Animationen ein/aus
+- Spielhinweise ein/aus, Auto-Stand bei 21
 - Alle Einstellungen werden persistent in SQLite gespeichert
 
 ---
@@ -96,8 +96,8 @@ PyJack folgt dem vorgegebenen 3-Schichten-Architekturmodell:
 │                  SQLite (pyjack.db)                         │
 │                                                             │
 │   ┌──────────────────┐    ┌────────────────────────┐        │
-│   │   game_records   │    │     app_settings        │       │
-│   │  (Spielhistorie) │    │  (Einstellungen ID=1)   │       │
+│   │   game_records   │    │     app_settings       │        │
+│   │  (Spielhistorie) │    │  (Einstellungen ID=1)  │        │
 │   └──────────────────┘    └────────────────────────┘        │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -271,7 +271,6 @@ CREATE TABLE app_settings (
     table_color   VARCHAR(30)  DEFAULT '#163824',
     card_back     VARCHAR(20)  DEFAULT '#1e3a8a',
     show_hints    BOOLEAN      DEFAULT 1,
-    animations    BOOLEAN      DEFAULT 1,
     auto_stand_21 BOOLEAN      DEFAULT 1
 );
 ```
@@ -279,19 +278,17 @@ CREATE TABLE app_settings (
 **Entity-Relationship:**
 
 ```
-┌──────────────────────┐        ┌────────────────────────┐
-│     game_records     │        │     app_settings       │
-├──────────────────────┤        ├────────────────────────┤
-│ PK id         INT    │        │ PK id = 1     INT      │
-│    timestamp DATETIME│        │    table_color  VARCHAR│
-│    winner    VARCHAR │        │    card_back    VARCHAR│
-│    player_score INT  │        │    show_hints   BOOL   │
-│    dealer_score INT  │        │    animations   BOOL   │
-│    player_cards TEXT │        │    auto_stand_21 BOOL  │
-│    dealer_cards TEXT │        └────────────────────────┘
-└──────────────────────┘        Singleton – immer ID=1 
-  n Einträge – 1 pro Spiel      
-                                
+┌─────────────────────────┐        ┌─────────────────────────┐
+│       game_records      │        │       app_settings      │
+├─────────────────────────┤        ├─────────────────────────┤
+│ PK id           INT     │        │ PK id = 1        INT    │
+│    timestamp    DATETIME│        │    table_color   VARCHAR│
+│    winner       VARCHAR │        │    card_back     VARCHAR│
+│    player_score INT     │        │    show_hints    BOOL   │
+│    dealer_score INT     │        │    player_cards  TEXT   │
+│    dealer_cards TEXT    │        │    auto_stand_21 BOOL   │
+└─────────────────────────┘        └─────────────────────────┘
+n Einträge – 1 pro Spiel        Singleton – immer ID=1 
                                                     
 ```
 
@@ -303,7 +300,7 @@ CREATE TABLE app_settings (
 |---|---|---|---|
 | **NiceGUI** | ≥ 1.4.0 | Web-UI Framework (Vue.js/Quasar wrapper) | MIT |
 | **SQLAlchemy** | ≥ 2.0.0 | ORM – Datenbankinteraktion ohne direkte SQL-Statements | MIT |
-| **Python Standard Library** | 3.11+ | `random`, `csv`, `io`, `base64`, `datetime`, `dataclasses`, `enum` | PSF |
+| **Python Standard Library** | 3.11+ | `random`, `csv`, `io`, `datetime`, `dataclasses`, `enum`, `re`, `typing` | PSF |
 
 **Frontend-Technologien (via NiceGUI, keine separate Installation):**
 
