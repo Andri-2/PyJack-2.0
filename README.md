@@ -111,6 +111,7 @@ Player
 Enum: CardRank        (TWO..ACE, mit symbol + base_value)
 Enum: CardSuit        (HEARTS/DIAMONDS/CLUBS/SPADES, mit symbol + color)
 Enum: GameState       (WAITING / PLAYER_TURN / DEALER_TURN / GAME_OVER)
+Enum: Winner          (PLAYER / DEALER / DRAW)
 
 @dataclass Card       (CardRank + CardSuit)
 Deck                  (52 Cards, shuffle, draw)
@@ -246,7 +247,7 @@ GamePageUI            (Spieloberfläche, refresh, Event-Handler)
 |---|---|---|---|---|---|
 | TC-14a | Hinweis „Hit empfohlen" wird angezeigt | Spiel läuft, Spieler hat niedrigen Punktestand (z.B. ≤ 11) | 'show_hints = True' | „Hit empfohlen" wird angezeigt | Niedrig |
 | TC-14b | Hinweis „Stand empfohlen" wird angezeigt | Spiel läuft, Spieler hat hohen Punktestand (z.B. ≥ 17) | 'show_hints = True' | „Stand empfohlen" wird angezeigt | Niedrig |
-| TC-14c | Hinweis nicht sichtbar wenn deaktiviert | `show_hints = False` in Einstellungen | 'show_hints = True' | Kein Hinweis erscheint | Niedrig |
+| TC-14c | Hinweis nicht sichtbar wenn deaktiviert | `show_hints = False` in Einstellungen | – | Kein Hinweis erscheint | Niedrig |
 
 ---
 
@@ -285,10 +286,11 @@ CREATE TABLE app_settings (
 │    timestamp    DATETIME│        │    table_color   VARCHAR│
 │    winner       VARCHAR │        │    card_back     VARCHAR│
 │    player_score INT     │        │    show_hints    BOOL   │
-│    dealer_score INT     │        │    player_cards  TEXT   │
-│    dealer_cards TEXT    │        │    auto_stand_21 BOOL   │
-└─────────────────────────┘        └─────────────────────────┘
-n Einträge – 1 pro Spiel        Singleton – immer ID=1 
+│    dealer_score INT     │        │    auto_stand_21 BOOL   │
+│    player_cards  TEXT   │        └─────────────────────────┘
+│    dealer_cards TEXT    │        Singleton – immer ID=1 
+└─────────────────────────┘        
+n Einträge – 1 pro Spiel        
                                                     
 ```
 
