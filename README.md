@@ -365,10 +365,10 @@ PyJack-2.0/
 
 | Bereich | Beschreibung | Verantwortlich |
 |---|---|---|
-| **Domain Layer** | Klassen: Card, Deck, Hand, Player, Dealer, Game, Enums | [VORNAME NACHNAME 1] |
-| **Persistenzschicht** | DatabaseManager, ORM-Modelle, Migration | [VORNAME NACHNAME 2] |
-| **UI & Präsentation** | UI-Design, Seitengestaltung, Farbpaletten, Navigation | [VORNAME NACHNAME 3] |
-| **Charts** | ECharts Integration (Kreisdiagram) | [VORNAME NACHNAME 3] |
+| **Domain Layer** | Klassen: Card, Deck, Hand, Player, Dealer, Game, Enums | Fisnik Mehmeti |
+| **Persistenzschicht** | DatabaseManager, ORM-Modelle, Migration | Fisnik Mehmeti |
+| **UI & Präsentation** | UI-Design, Seitengestaltung, Farbpaletten, Navigation | Andri Schwab |
+| **Charts** | ECharts Integration (Kreisdiagram) | Andri Schwab |
 | **Dokumentation** | README, Use Cases, User Stories | Alle |
 | **Testing & Bugfixing** | Manuelle Tests, DB-Migration, Bugfixes | Alle |
 
